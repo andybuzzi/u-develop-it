@@ -67,6 +67,40 @@ app.get("/api/candidate/:id", (req, res) => {
   });
 });
 
+// Route for ALL the PARTIES
+
+app.get("/api/parties", (req, res) => {
+  const sql = `SELECT * FROM parties`;
+
+  db.query(sql, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json({
+      message: "success",
+      data: rows,
+    });
+  });
+});
+
+// Route for SINGLE PARTY (ID parameter)
+app.get("/api/party/:id", (req, res) => {
+  const sql = `SELECT * FROM parties WHERE id = ?`;
+  const params = [req.params.id];
+
+  db.query(sql, params, (err, row) => {
+    if (err) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.json({
+      message: "success",
+      data: row,
+    });
+  });
+});
+
 // DELETE a candidate
 
 app.delete(`/api/candidate/:id`, (req, res) => {
@@ -80,6 +114,29 @@ app.delete(`/api/candidate/:id`, (req, res) => {
     else if (!result.affectedRows) {
       res.json({
         message: "Candidate not found",
+      });
+    } else {
+      res.json({
+        message: "deleted",
+        changes: result.affectedRows,
+        id: req.params.id,
+      });
+    }
+  });
+});
+
+// DELETE PARTY(IES)
+app.delete("/api/party/:id", (req, res) => {
+  sql = `DELETE FROM parties WHERE id = ?`;
+  params = [req.params.id];
+
+  db.query(sql, params, (err, result) => {
+    if (err) {
+      res.status(400).json({ error: res.message });
+      //check if anything was deleted
+    } else if (!result.affectedRows) {
+      res.json({
+        message: "Party not found",
       });
     } else {
       res.json({
@@ -119,19 +176,30 @@ app.post("/api/candidate", ({ body }, res) => {
     });
   });
 });
-// CREATE a candidate
-// const sql = `INSERT INTO candidates (id, first_name, last_name, industry_connected) VALUES (?,?,?,?)`;
 
-// const params = [1, "Ronald", "Firbank", 1];
+// UPDATE a candidate's party
+app.put("/api/candidate/:id", (req, res) => {
+  const sql = `UPDATE candidates SET party_id = ?
+               WHERE id = ?`;
+  const params = [req.body.party_id, req.params.id];
 
-// db.query(sql, params, (err, result) => {
-//   if (err) {
-//     console.log(err);
-//   }
-//   console.log(result);
-// });
-
-// Default response for any other request (Not Found) --> This has to be the last route to not override the other ones. (catchall route)
+  db.query(sql, params, (err, result) => {
+    if (err) {
+      res.status(400).json({ error: err.message });
+      //check if a record was found
+    } else if (!result.affectedRows) {
+      res.json({
+        message: "Candidate not found",
+      });
+    } else {
+      res.json({
+        message: "success",
+        data: req.body,
+        changes: result.affectedRows,
+      });
+    }
+  });
+});
 
 app.use((req, res) => {
   res.status(404).end();
